@@ -37,20 +37,24 @@ ENV/
 .ipynb_checkpoints
 
 # Data
-data/
+data/*
+!data/.gitkeep
 *.csv
 *.tsv
 *.json
 
 # Model outputs
-outputs/
-checkpoints/
+outputs/*
+!outputs/.gitkeep
+checkpoints/*
+!checkpoints/.gitkeep
 *.pt
 *.pth
 *.bin
 
 # Logs
-logs/
+logs/*
+!logs/.gitkeep
 *.log
 
 # OS
@@ -58,8 +62,10 @@ logs/
 Thumbs.db
 
 # Attention visualizations
-attention_viz/
+attention_viz/*
+!attention_viz/.gitkeep
 !outputs/*.png
+
 
 
 # Temporary files
