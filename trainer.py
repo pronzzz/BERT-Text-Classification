@@ -300,21 +300,25 @@ class Trainer:
         fig, axes = plt.subplots(1, 2, figsize=(15, 5))
         
         # Loss plot
-        axes[0].plot(self.train_losses, label='Train Loss')
-        axes[0].plot(self.val_losses, label='Val Loss')
+        epochs = range(1, len(self.train_losses) + 1)
+        axes[0].plot(epochs, self.train_losses, 'o-', label='Train Loss')
+        axes[0].plot(epochs, self.val_losses, 'o-', label='Val Loss')
         axes[0].set_xlabel('Epoch')
         axes[0].set_ylabel('Loss')
         axes[0].set_title('Training History - Loss')
         axes[0].legend()
         axes[0].grid(True)
+        from matplotlib.ticker import MaxNLocator
+        axes[0].xaxis.set_major_locator(MaxNLocator(integer=True))
         
         # Accuracy plot
-        axes[1].plot(self.val_accuracies, label='Val Accuracy')
+        axes[1].plot(epochs, self.val_accuracies, 'o-', label='Val Accuracy')
         axes[1].set_xlabel('Epoch')
         axes[1].set_ylabel('Accuracy')
         axes[1].set_title('Training History - Validation Accuracy')
         axes[1].legend()
         axes[1].grid(True)
+        axes[1].xaxis.set_major_locator(MaxNLocator(integer=True))
         
         plt.tight_layout()
         filename = os.path.join(self.args.output_dir, 'training_history.png')
