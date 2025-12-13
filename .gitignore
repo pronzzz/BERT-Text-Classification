@@ -59,9 +59,8 @@ Thumbs.db
 
 # Attention visualizations
 attention_viz/
-*.png
-*.jpg
-*.jpeg
+!outputs/*.png
+
 
 # Temporary files
 tmp/

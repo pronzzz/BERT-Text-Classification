@@ -7,7 +7,7 @@ import os
 import re
 import pandas as pd
 import numpy as np
-from datasets import load_dataset
+
 from sklearn.model_selection import train_test_split
 from collections import Counter
 import matplotlib.pyplot as plt
@@ -23,24 +23,73 @@ class DataPreparator:
         os.makedirs(output_dir, exist_ok=True)
         
     def download_dataset(self):
-        """Download AG News dataset from Hugging Face."""
-        print(f"Downloading {self.dataset_name} dataset...")
-        dataset = load_dataset(self.dataset_name)
+        """Download AG News dataset from Kaggle."""
+        print(f"Downloading {self.dataset_name} dataset from Kaggle...")
         
-        # AG News has 4 classes: World, Sports, Business, Sci/Tech
-        # Labels: 1=World, 2=Sports, 3=Business, 4=Sci/Tech
-        # Convert to 0-indexed: 0=World, 1=Sports, 2=Business, 3=Sci/Tech
+        # Download using Kaggle API
+        try:
+            from kaggle.api.kaggle_api_extended import KaggleApi
+            api = KaggleApi()
+            api.authenticate()
+            api.dataset_download_files('amananandrai/ag-news-classification-dataset', path=self.output_dir, unzip=True)
+        except Exception as e:
+            print(f"Kaggle API failed (likely no credentials): {e}")
+            print("Falling back to direct download from mirror...")
+            try:
+                import requests
+                urls = {
+                    'train.csv': 'https://raw.githubusercontent.com/mhjabreel/CharCnn_Keras/master/data/ag_news_csv/train.csv',
+                    'test.csv': 'https://raw.githubusercontent.com/mhjabreel/CharCnn_Keras/master/data/ag_news_csv/test.csv'
+                }
+                for name, url in urls.items():
+                    r = requests.get(url)
+                    with open(os.path.join(self.output_dir, name), 'wb') as f:
+                        f.write(r.content)
+                # Mirror does not have header, load with header=None and assign names
+                # Actually checking the curl output, it does NOT have a header row. It starts with data.
+                # I need to handle this in read_csv
+            except Exception as e2:
+                raise RuntimeError(f"Failed to download dataset from Fallback: {e2}") from e
+
+            
+        # Read CSVs
+        train_path = os.path.join(self.output_dir, 'train.csv')
+        test_path = os.path.join(self.output_dir, 'test.csv')
         
-        train_df = dataset['train'].to_pandas()
-        test_df = dataset['test'].to_pandas()
+        try:
+            # Helper to read AG News format (handling potential missing header)
+            def read_ag_csv(path):
+                # Try reading with header inference
+                df = pd.read_csv(path)
+                # Check if it looks like the Kaggle format with headers
+                if 'Class Index' in df.columns and 'Title' in df.columns:
+                    return df
+                
+                # If not, assume it's the raw format without headers
+                # We need to re-read because the first row was consumed as header
+                df = pd.read_csv(path, header=None, names=['Class Index', 'Title', 'Description'])
+                return df
+
+            train_df = read_ag_csv(train_path)
+            test_df = read_ag_csv(test_path)
+        except Exception as e:
+            # Fallback if filenames are different or download failed silently
+            print(f"Error reading CSVs: {e}")
+            print(os.listdir(self.output_dir))
+            raise
+
+        # Kaggle AG News format: Class Index, Title, Description
+        # Create 'text' column by combining Title and Description
+        train_df['text'] = train_df['Title'] + " " + train_df['Description']
+        test_df['text'] = test_df['Title'] + " " + test_df['Description']
         
-        # Convert labels to 0-indexed
-        train_df['label'] = train_df['label'] - 1
-        test_df['label'] = test_df['label'] - 1
+        # Rename 'Class Index' to 'label' and adjust to 0-indexed
+        train_df['label'] = train_df['Class Index'] - 1
+        test_df['label'] = test_df['Class Index'] - 1
         
-        # Rename columns for consistency
-        train_df = train_df.rename(columns={'text': 'text'})
-        test_df = test_df.rename(columns={'text': 'text'})
+        # Keep only relevant columns
+        train_df = train_df[['text', 'label']]
+        test_df = test_df[['text', 'label']]
         
         print(f"Train set: {len(train_df)} samples")
         print(f"Test set: {len(test_df)} samples")

@@ -10,5 +10,8 @@ tqdm>=4.65.0
 bertviz>=1.0.0
 captum>=0.6.0
 accelerate>=0.20.0
+kaggle
+flask
+requests
 
 

@@ -61,6 +61,8 @@ def main():
                         help='Maximum gradient norm for clipping')
     parser.add_argument('--max_len', type=int, default=256,
                         help='Maximum sequence length')
+    parser.add_argument('--limit_samples', type=int, default=None,
+                        help='Limit number of samples for debugging/quick testing')
     
     # Output arguments
     parser.add_argument('--output_dir', type=str, default='outputs',
@@ -77,6 +79,18 @@ def main():
     # Load data
     print("Loading data...")
     (train_texts, train_labels), (val_texts, val_labels), (test_texts, test_labels) = load_data(args.data_dir)
+    
+    if args.limit_samples:
+        print(f"Limiting samples to {args.limit_samples}")
+        train_texts = train_texts[:args.limit_samples]
+        train_labels = train_labels[:args.limit_samples]
+        # Keep validation/test proportional or small fixed size
+        val_limit = min(len(val_texts), max(100, args.limit_samples // 5))
+        test_limit = min(len(test_texts), max(100, args.limit_samples // 5))
+        val_texts = val_texts[:val_limit]
+        val_labels = val_labels[:val_limit]
+        test_texts = test_texts[:test_limit]
+        test_labels = test_labels[:test_limit]
     
     print(f"Train samples: {len(train_texts)}")
     print(f"Val samples: {len(val_texts)}")

@@ -8,9 +8,9 @@ import torch.nn as nn
 from torch.utils.data import DataLoader
 from transformers import (
     DistilBertForSequenceClassification,
-    AdamW,
     get_linear_schedule_with_warmup
 )
+from torch.optim import AdamW
 from sklearn.metrics import classification_report, confusion_matrix, accuracy_score, f1_score
 import numpy as np
 from tqdm import tqdm
@@ -24,7 +24,12 @@ class Trainer:
     
     def __init__(self, args, train_loader, val_loader, test_loader=None):
         self.args = args
-        self.device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+        if torch.cuda.is_available():
+            self.device = torch.device('cuda')
+        elif hasattr(torch.backends, 'mps') and torch.backends.mps.is_available():
+            self.device = torch.device('mps')
+        else:
+            self.device = torch.device('cpu')
         print(f"Using device: {self.device}")
         
         # Model setup
